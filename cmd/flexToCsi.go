@@ -20,8 +20,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Madhu-1/ceph-pvc-migration-to-csi/internal/ceph/rbd"
-	"github.com/Madhu-1/ceph-pvc-migration-to-csi/internal/kubernetes"
+	"migrate-to-ceph-csi/internal/ceph/rbd"
+	"migrate-to-ceph-csi/internal/kubernetes"
+
 	"github.com/spf13/cobra"
 )
 
@@ -182,6 +183,7 @@ func migrateFlexToCSI() {
 			fmt.Println()
 			fail(err.Error())
 		}
+		fmt.Println("YUG USER: ", user, "KEY:", key)
 		fmt.Println()
 		fmt.Println("YUG NO err in GetRBDUserAndKeyFromSecret", err)
 		fmt.Println()
@@ -193,8 +195,15 @@ func migrateFlexToCSI() {
 		}
 		fmt.Println("YUG NO err in NewConnection", err)
 		defer conn.Destroy()
-		//7. Delete the CSI volume in ceph cluster
-		err = conn.RemoveVolume(csiRBDImageName)
+		// //7. Delete the CSI volume in ceph cluster
+		// err = conn.RemoveVolume(csiRBDImageName)
+		// if err != nil {
+		// 	fmt.Println("YUG err in RemoveVolume", err)
+		// 	fmt.Println()
+		// 	fail(err.Error())
+		// }
+		//TEST 7. Delete the CSI volume in ceph cluster
+		err = rbd.RemoveVolumeAdmin(poolName, csiRBDImageName)
 		if err != nil {
 			fmt.Println("YUG err in RemoveVolume", err)
 			fmt.Println()
