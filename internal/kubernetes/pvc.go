@@ -159,7 +159,7 @@ func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*cor
 		err = WaitOnPVandPVC(c, pvc.Namespace, pv, pvc)
 		fmt.Println(28)
 		if err != nil {
-			fmt.Println(29)
+			fmt.Println(29, err)
 			return false, nil
 		}
 		fmt.Println(30)

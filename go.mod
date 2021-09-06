@@ -1,4 +1,4 @@
-module github.com/Madhu-1/ceph-pvc-migration-to-csi
+module migrate-to-ceph-csi
 
 go 1.15
 

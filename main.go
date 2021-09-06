@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/Madhu-1/ceph-pvc-migration-to-csi/cmd"
+import "migrate-to-ceph-csi/cmd"
 
 func main() {
 	cmd.Execute()
