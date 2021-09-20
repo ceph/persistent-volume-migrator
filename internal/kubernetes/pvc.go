@@ -18,29 +18,28 @@ const (
 )
 
 func ListAllPVCWithStorageclass(client *k8s.Clientset, scName string) (*[]corev1.PersistentVolumeClaim, error) {
-	fmt.Println(1)
+
 	pl := &[]corev1.PersistentVolumeClaim{}
-	fmt.Println(2)
+
 	listOpt := v1.ListOptions{}
-	fmt.Println(3)
+
 	ctx := context.TODO()
-	fmt.Println(4)
+
 	ns, err := client.CoreV1().Namespaces().List(ctx, listOpt)
-	fmt.Println("YUG", ns)
+
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(5)
+
 	for _, n := range ns.Items {
 		pvc, err := client.CoreV1().PersistentVolumeClaims(n.Name).List(ctx, listOpt)
 
-		fmt.Println("YUG& subham", pvc)
 		if err != nil {
 			continue
 		}
 		for _, p := range pvc.Items {
 			sc := p.Spec.StorageClassName
-			fmt.Println("iterating sc", *sc)
+
 			if sc == nil {
 				if val, ok := p.Annotations[storageClassBetaAnnotationKey]; !ok {
 					continue
@@ -48,15 +47,12 @@ func ListAllPVCWithStorageclass(client *k8s.Clientset, scName string) (*[]corev1
 					sc = &val
 				}
 			}
-			fmt.Println("sc name", *p.Spec.StorageClassName)
-			fmt.Println("var sc name", scName)
+
 			if *p.Spec.StorageClassName == scName {
 				*pl = append(*pl, p)
 			}
 		}
 	}
-	fmt.Println(7)
-	fmt.Println(pl)
 	return pl, nil
 }
 
@@ -97,93 +93,67 @@ func GenerateCSIPVC(storageclass string, pvc *corev1.PersistentVolumeClaim) *cor
 	csiPVC.ObjectMeta.Annotations = make(map[string]string)
 	csiPVC.Status = corev1.PersistentVolumeClaimStatus{}
 	csiPVC.Spec.StorageClassName = &storageclass
-	fmt.Println()
-	fmt.Println("YUG inside GenerateCSIPVC , csiPVC: ", csiPVC)
-	fmt.Println()
 
 	return csiPVC
 }
 
 func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*corev1.PersistentVolume, error) {
-	fmt.Println(10)
 	timeout := time.Duration(t) * time.Minute
-	fmt.Println(11)
 	pv := &corev1.PersistentVolume{}
-	fmt.Println(12)
+
 	var err error
 	_, err = c.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(context.TODO(), pvc, v1.CreateOptions{})
 	if err != nil {
-		fmt.Println(13)
 		return nil, err
 	}
-	fmt.Println(14)
+
 	name := pvc.Name
 	start := time.Now()
 	fmt.Printf("Waiting up to %v to be in Bound state\n", pvc)
-	fmt.Println(15)
+
 	err = wait.PollImmediate(poll, timeout, func() (bool, error) {
-		fmt.Println(16)
 		fmt.Printf("waiting for PVC %s (%d seconds elapsed) \n", pvc.Name, int(time.Since(start).Seconds()))
 		pvc, err = c.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(context.TODO(), name, v1.GetOptions{})
 		if err != nil {
-			fmt.Println(17)
 			fmt.Printf("Error getting pvc in namespace: '%s': %v\n", pvc.Namespace, err)
 			// TODO check need to check retry error
-
 			if apierrs.IsNotFound(err) {
-				fmt.Println(18)
 				return false, nil
 			}
-			fmt.Println(19)
 			return false, err
 		}
-		fmt.Println(20)
 		if pvc.Spec.VolumeName == "" {
-			fmt.Println(21)
 			return false, nil
 		}
-		fmt.Println(22)
-
 		pv, err = c.CoreV1().PersistentVolumes().Get(context.TODO(), pvc.Spec.VolumeName, v1.GetOptions{})
-		fmt.Println(23)
 		if err != nil {
-			fmt.Println(24)
 			return false, err
 		}
-		fmt.Println(25)
+
 		if apierrs.IsNotFound(err) {
-			fmt.Println(26)
 			return false, nil
 		}
-		fmt.Println(27)
+
 		err = WaitOnPVandPVC(c, pvc.Namespace, pv, pvc)
-		fmt.Println(28)
 		if err != nil {
-			fmt.Println(29, err)
 			return false, nil
 		}
-		fmt.Println(30)
 		return true, nil
 	})
-	fmt.Println(31)
+
 	if err == nil {
-		fmt.Println(31)
 		pvc, err = c.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(context.TODO(), name, v1.GetOptions{})
 		if err != nil {
-			fmt.Println(32)
 			return nil, err
 		}
-		fmt.Println(33)
+
 		pv, err = c.CoreV1().PersistentVolumes().Get(context.TODO(), pvc.Spec.VolumeName, v1.GetOptions{})
-		fmt.Println(34)
 		if err != nil {
-			fmt.Println(35)
 			return nil, err
 		}
-		fmt.Println(36)
 		return pv, err
 	}
-	fmt.Println(37)
+
 	return nil, err
 }
 
@@ -247,15 +217,14 @@ func WaitForPersistentVolumeClaimsPhase(phase corev1.PersistentVolumeClaimPhase,
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
 		phaseFoundInAllClaims := true
 		for _, pvcName := range pvcNames {
-			fmt.Println("TEST NEW PVC", pvcName)
+
 			pvc, err := c.CoreV1().PersistentVolumeClaims(ns).Get(context.TODO(), pvcName, v1.GetOptions{})
 			if err != nil {
 				fmt.Printf("Failed to get claim %q, retrying in %v. Error: %v\n", pvcName, poll, err)
 				phaseFoundInAllClaims = false
 				break
 			}
-			fmt.Println("TEST NEW PVC PHASE ", pvc.Status.Phase)
-			fmt.Println("TEST PASSED PVC PHASE ", phase)
+
 			if pvc.Status.Phase == phase {
 				fmt.Printf("PersistentVolumeClaim %s found and phase=%s (%v) \n", pvcName, phase, time.Since(start))
 				if matchAny {
