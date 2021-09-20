@@ -191,15 +191,15 @@ func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*cor
 func WaitOnPVandPVC(c *kubernetes.Clientset, ns string, pv *corev1.PersistentVolume, pvc *corev1.PersistentVolumeClaim) error {
 	// Wait for newly created PVC to bind to the PV
 	fmt.Printf("Waiting for PV %v to bind to PVC %v", pv.Name, pvc.Name)
-	fmt.Println("TEST parameters in WaitOnPVandPVC", corev1.ClaimBound, c, ns, pvc.Name, poll, 300)
-	err := WaitForPersistentVolumeClaimPhase(corev1.ClaimBound, c, ns, pvc.Name, poll, 300)
+	fmt.Println("TEST parameters in WaitOnPVandPVC", corev1.ClaimBound, c, ns, pvc.Name, poll, 30000000)
+	err := WaitForPersistentVolumeClaimPhase(corev1.ClaimBound, c, ns, pvc.Name, poll, 30000000)
 	if err != nil {
 		return fmt.Errorf("PVC %q did not become Bound: %v", pvc.Name, err)
 	}
 
 	// Wait for PersistentVolume.Status.Phase to be Bound, which it should be
 	// since the PVC is already bound.
-	err = WaitForPersistentVolumePhase(c, corev1.VolumeBound, pv.Name, poll, 300)
+	err = WaitForPersistentVolumePhase(c, corev1.VolumeBound, pv.Name, poll, 3000000000)
 	if err != nil {
 		return fmt.Errorf("PV %q did not become Bound: %v", pv.Name, err)
 	}
