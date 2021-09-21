@@ -91,7 +91,6 @@ func GenerateCSIPVC(storageclass string, pvc *corev1.PersistentVolumeClaim) *cor
 func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*corev1.PersistentVolume, error) {
 	timeout := time.Duration(t) * time.Minute
 	pv := &corev1.PersistentVolume{}
-
 	var err error
 	_, err = c.CoreV1().PersistentVolumeClaims(pvc.Namespace).Create(context.TODO(), pvc, v1.CreateOptions{})
 	if err != nil {
