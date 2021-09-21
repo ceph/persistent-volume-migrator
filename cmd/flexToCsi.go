@@ -20,8 +20,8 @@ import (
 	"os"
 	"strings"
 
-	"migrate-to-ceph-csi/internal/ceph/rbd"
-	"migrate-to-ceph-csi/internal/kubernetes"
+	"persistent-volume-migrator/internal/ceph/rbd"
+	"persistent-volume-migrator/internal/kubernetes"
 
 	"github.com/spf13/cobra"
 )

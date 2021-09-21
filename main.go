@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "migrate-to-ceph-csi/cmd"
+import "persistent-volume-migrator/cmd"
 
 func main() {
 	cmd.Execute()
