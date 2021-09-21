@@ -104,7 +104,6 @@ func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*cor
 	name := pvc.Name
 	start := time.Now()
 	fmt.Printf("Waiting up to %v to be in Bound state\n", pvc)
-
 	err = wait.PollImmediate(poll, timeout, func() (bool, error) {
 		fmt.Printf("waiting for PVC %s (%d seconds elapsed) \n", pvc.Name, int(time.Since(start).Seconds()))
 		pvc, err = c.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(context.TODO(), name, v1.GetOptions{})
