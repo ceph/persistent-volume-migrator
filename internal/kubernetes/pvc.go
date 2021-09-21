@@ -138,7 +138,6 @@ func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*cor
 		if err != nil {
 			return nil, err
 		}
-
 		pv, err = c.CoreV1().PersistentVolumes().Get(context.TODO(), pvc.Spec.VolumeName, v1.GetOptions{})
 		if err != nil {
 			return nil, err
