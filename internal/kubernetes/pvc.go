@@ -39,7 +39,6 @@ func ListAllPVCWithStorageclass(client *k8s.Clientset, scName string) (*[]corev1
 					sc = &val
 				}
 			}
-
 			if *p.Spec.StorageClassName == scName {
 				*pl = append(*pl, p)
 			}
