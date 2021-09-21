@@ -122,7 +122,6 @@ func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*cor
 		if err != nil {
 			return false, err
 		}
-
 		if apierrs.IsNotFound(err) {
 			return false, nil
 		}
