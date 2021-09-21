@@ -21,7 +21,6 @@ func ListAllPVCWithStorageclass(client *k8s.Clientset, scName string) (*[]corev1
 	pl := &[]corev1.PersistentVolumeClaim{}
 	listOpt := v1.ListOptions{}
 	ctx := context.TODO()
-
 	ns, err := client.CoreV1().Namespaces().List(ctx, listOpt)
 	if err != nil {
 		return nil, err
