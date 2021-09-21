@@ -88,7 +88,6 @@ func migrateFlexToCSI() {
 	if pvcs == nil || len(*pvcs) == 0 {
 		fail(fmt.Sprintf("no PVC found with storageclass %v\n", sourceStorageClass))
 	}
-	fmt.Println()
 
 	//  3. Change Reclaim policy from Delete to Reclaim
 	for _, p := range *pvcs {
@@ -97,8 +96,7 @@ func migrateFlexToCSI() {
 			fmt.Printf("failed to get PV object with name %s \n", p.Spec.VolumeName)
 			continue
 		}
-		fmt.Printf("PV found to change reclaim policy %v ", pv)
-		fmt.Println()
+		fmt.Printf("PV found %v ", pv)
 		err = kubernetes.UpdateReclaimPolicy(client, pv)
 		if err != nil {
 			fmt.Printf("failed to update ReclaimPolicy for PV object %s \n", p.Spec.VolumeName)
@@ -120,7 +118,7 @@ func migrateFlexToCSI() {
 		}
 		//5. Create new PVC with same name in destination storageclass
 		csiPVC := kubernetes.GenerateCSIPVC(destinationStorageClass, &p)
-		fmt.Printf("generated new structure of PVC with same name as source storageclass in destination storageclass \n %v ", csiPVC)
+		fmt.Printf("structure of the generated PVC in destination Storageclass \n %v ", csiPVC)
 
 		// 6. Create new CSI PVC
 		csiPV, err := kubernetes.CreatePVC(client, csiPVC, 5)
@@ -134,17 +132,15 @@ func migrateFlexToCSI() {
 		if csiRBDImageName == "" {
 			fail("csiRBDImageName cannot be nil in PV object")
 		}
-		fmt.Printf("csi rbdImageName name %v ", csiRBDImageName)
+		fmt.Printf("csi new volume name: %v ", csiRBDImageName)
 		clusterID := kubernetes.GetClusterID(csiPV)
 		if clusterID == "" {
 			fail("clusterID cannot be nil in PV object")
 		}
-		fmt.Printf("clusterID of csiPV %v ", clusterID)
 		poolName := kubernetes.GetCSIPoolName(csiPV)
 		if poolName == "" {
 			fail("poolName cannot be nil in PV object")
 		}
-		fmt.Println("Poolname of csiPV ", poolName)
 
 		csiConfig, err := kubernetes.GetCSIConfiguration(client, rookNamespace)
 		if err != nil {
@@ -161,42 +157,36 @@ func migrateFlexToCSI() {
 		if monitor == "" {
 			fail(fmt.Sprintf("failed to get monitor information %v \n", csiConfig))
 		}
-		fmt.Printf("mon found %v ", monitor)
 		user, key, err := kubernetes.GetRBDUserAndKeyFromSecret(client, cephClusterNamespace)
 		if err != nil {
 			fmt.Println("err in GetRBDUserAndKeyFromSecret", err)
-			fmt.Println()
 			fail(err.Error())
 		}
 		conn, err := rbd.NewConnection(monitor, user, key, poolName, "")
 		if err != nil {
-			fmt.Println("err found in NewConnection", err)
-			fmt.Println()
+			fmt.Println("err in NewConnection: ", err)
 			fail(err.Error())
 		}
 
 		defer conn.Destroy()
-		// //7. Delete the CSI volume in ceph cluster
+		// 7. Delete the CSI volume in ceph cluster
 		err = conn.RemoveVolumeAdmin(poolName, csiRBDImageName)
 		if err != nil {
-			fmt.Println("err found in RemoveVolume", err)
-			fmt.Println()
+			fmt.Println("err in RemoveVolume", err)
 			fail(err.Error())
 		}
 
 		//  8. Rename old ceph volume to new CSI volume
 		err = conn.RenameVolume(csiRBDImageName, rbdImageName)
 		if err != nil {
-			fmt.Println("err found in RenameVolume", err)
-			fmt.Println()
+			fmt.Println("err in RenameVolume", err)
 			fail(err.Error())
 		}
 
 		//  9. Delete old PV object
 		err = kubernetes.DeletePV(client, pv)
 		if err != nil {
-			fmt.Println("err in DeletePV ", err)
-			fmt.Println()
+			fmt.Println("err in DeletePV: ", err)
 			fail(err.Error())
 		}
 	}
