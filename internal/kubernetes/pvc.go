@@ -214,7 +214,6 @@ func WaitForPersistentVolumeClaimsPhase(phase corev1.PersistentVolumeClaimPhase,
 				phaseFoundInAllClaims = false
 				break
 			}
-
 			if pvc.Status.Phase == phase {
 				fmt.Printf("PersistentVolumeClaim %s found and phase=%s (%v) \n", pvcName, phase, time.Since(start))
 				if matchAny {
