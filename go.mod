@@ -1,4 +1,4 @@
-module migrate-to-ceph-csi
+module persistent-volume-migrator
 
 go 1.15
 
