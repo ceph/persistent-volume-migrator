@@ -32,7 +32,6 @@ func ListAllPVCWithStorageclass(client *k8s.Clientset, scName string) (*[]corev1
 		}
 		for _, p := range pvc.Items {
 			sc := p.Spec.StorageClassName
-
 			if sc == nil {
 				if val, ok := p.Annotations[storageClassBetaAnnotationKey]; !ok {
 					continue
