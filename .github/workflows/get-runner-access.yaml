@@ -1,0 +1,24 @@
+name: Action runner access
+on:
+  pull_request:
+
+jobs:
+  get-runner-shell:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: setup minikube
+      uses: manusa/actions-setup-minikube@v2.4.2
+      with:
+        minikube version: 'v1.23.2'
+        kubernetes version: 'v1.22.2'
+        start args: --memory 6g --cpus=2
+        github token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: setup tmate session for debugging when event is PR
+      if: always()
+      uses: mxschmitt/action-tmate@v3
