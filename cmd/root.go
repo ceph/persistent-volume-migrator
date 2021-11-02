@@ -80,27 +80,29 @@ func migrateToCSI() error {
 	*/
 
 	// Create Kubernetes Client
+	logger.DefaultLog("Create Kubernetes Client")
 	client, err := kubernetes.NewClient(kubeConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create kubernetes client: %v", err)
 	}
-	// List all the PVC from the source storageclass
+
+	logger.DefaultLog("List all the PVC from the source storageclass")
 	pvcs, err := kubernetes.ListAllPVCWithStorageclass(client, sourceStorageClass)
 	if err != nil {
 		return fmt.Errorf("failed to list PVCs from the storageclass: %v", err)
 	}
-	logger.DebugLog("listing all pvc from sourceStorageClass %s %v ", sourceStorageClass, pvcs)
+	logger.DefaultLog("PVCs found with sourceStorageClass %s: %v ", sourceStorageClass, pvcs)
 	if pvcs == nil || len(*pvcs) == 0 {
-		logger.DebugLog("no PVCs found with storageclass: %v", sourceStorageClass)
+		logger.DefaultLog("no PVCs found with storageclass: %v", sourceStorageClass)
 		return nil
 	}
 
-	// Change Reclaim policy from Delete to Reclaim
+	logger.DefaultLog("Start Migration of PVCs to CSI")
 	err = migratePVC(client, pvcs)
 	if err != nil {
 		return fmt.Errorf("Failed to migrate PVC/s : %v", err)
 	}
-	logger.DebugLog("Successfully migrated all the PVC from FlexVolume to CSI")
+	logger.DefaultLog("Successfully migrated all the PVC from FlexVolume to CSI")
 
 	return err
 }
