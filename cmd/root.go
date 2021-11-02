@@ -16,6 +16,10 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+	"persistent-volume-migrator/internal/kubernetes"
+	logger "persistent-volume-migrator/internal/log"
+
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +36,22 @@ var rootCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Tool to migrate kubernetes ceph in-tree and flex volume to CSI",
 	Long:  `Tool to migrate kubernetes ceph in-tree and flex volume to CSI`,
+
+	// 1. List all the PVC from the source storageclass
+	// 2. Change Reclaim policy from Delete to Reclaim
+	// 3. Retrive old ceph volume name from PV
+	// 4. Delete the PVC object
+	// 5. Create new PVC with same name in destination storageclass
+	// 6. Extract new volume name from CSI PV
+	// 7. Delete the CSI volume in ceph cluster
+	// 8. Rename old ceph volume to new CSI volume
+	// 9. Delete old PV object
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := migrateToCSI(); err != nil {
+			return err
+		}
+		return nil
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -50,5 +70,37 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&sourceStorageClass, "sourcestoraageclass", "", "source storageclass from which all PVC need to be migrated")
 	rootCmd.PersistentFlags().StringVar(&destinationStorageClass, "destinationstorageclass", "", "destination storageclass (CSI storageclass) to which all PVC need to be migrated")
 	rootCmd.PersistentFlags().StringVar(&rookNamespace, "rook-namespace", "rook-ceph", "Kubernetes namespace where rook operator is running")
-	rootCmd.PersistentFlags().StringVar(&cephClusterNamespace, "ceph-clsuter-namespace", "rook-ceph", "Kubernetes namespace where ceph cluster is created")
+	rootCmd.PersistentFlags().StringVar(&cephClusterNamespace, "ceph-cluster-namespace", "rook-ceph", "Kubernetes namespace where ceph cluster is created")
+}
+
+func migrateToCSI() error {
+	// TODO
+	/*
+		add validation to check source,destination storageclass and Rook namespace
+	*/
+
+	// Create Kubernetes Client
+	client, err := kubernetes.NewClient(kubeConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kubernetes client: %v", err)
+	}
+	// List all the PVC from the source storageclass
+	pvcs, err := kubernetes.ListAllPVCWithStorageclass(client, sourceStorageClass)
+	if err != nil {
+		return fmt.Errorf("failed to list PVCs from the storageclass: %v", err)
+	}
+	logger.DebugLog("listing all pvc from sourceStorageClass %s %v ", sourceStorageClass, pvcs)
+	if pvcs == nil || len(*pvcs) == 0 {
+		logger.DebugLog("no PVCs found with storageclass: %v", sourceStorageClass)
+		return nil
+	}
+
+	// Change Reclaim policy from Delete to Reclaim
+	err = migratePVC(client, pvcs)
+	if err != nil {
+		return fmt.Errorf("Failed to migrate PVC/s : %v", err)
+	}
+	logger.DebugLog("Successfully migrated all the PVC from FlexVolume to CSI")
+
+	return err
 }
