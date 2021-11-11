@@ -25,14 +25,11 @@ import (
 // ErrorLog helps in logging errors.
 func ErrorLog(message string, args ...interface{}) {
 	logMessage := fmt.Sprintf(message, args...)
-	klog.ErrorDepth(1, logMessage)
+	klog.ErrorDepth(0, logMessage)
 }
 
-// DefaultLog helps in logging with klog.level 1.
+// DefaultLog helps in logging with klog.level 0.
 func DefaultLog(message string, args ...interface{}) {
 	logMessage := fmt.Sprintf(message, args...)
-	// If logging is disabled, don't evaluate the arguments
-	if klog.V(1).Enabled() {
-		klog.InfoDepth(1, logMessage)
-	}
+	klog.InfoDepth(0, logMessage)
 }

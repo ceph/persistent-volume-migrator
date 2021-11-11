@@ -28,14 +28,6 @@ const (
 	tmpKeyFileNamePrefix = "keyfile-"
 )
 
-type Connection struct {
-	Monitors string
-	ID       string
-	KeyFile  string
-	Pool     string
-	DataPool string
-}
-
 func storeKey(key string) (string, error) {
 	tmpfile, err := ioutil.TempFile(tmpKeyFileLocation, tmpKeyFileNamePrefix)
 	if err != nil {
@@ -63,25 +55,6 @@ func storeKey(key string) (string, error) {
 	}
 
 	return keyFile, nil
-}
-
-func NewConnection(monitor, id, key, pool, datapool string) (*Connection, error) {
-	keyfile, err := storeKey(key)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("New connection arg", monitor, " id", id, " keyfile", keyfile, " pool", pool, " datapool", datapool)
-	return &Connection{
-		Monitors: monitor,
-		ID:       id,
-		KeyFile:  keyfile,
-		Pool:     pool,
-		DataPool: datapool,
-	}, nil
-}
-
-func (c *Connection) Destroy() error {
-	return os.Remove(c.KeyFile)
 }
 
 func execCommand(command string, args []string) ([]byte, error) {

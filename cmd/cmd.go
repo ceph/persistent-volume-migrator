@@ -16,9 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-	"persistent-volume-migrator/internal/kubernetes"
-	logger "persistent-volume-migrator/internal/log"
+	"persistent-volume-migrator/pkg/migration"
 
 	"github.com/spf13/cobra"
 )
@@ -47,7 +45,8 @@ var rootCmd = &cobra.Command{
 	// 8. Rename old ceph volume to new CSI volume
 	// 9. Delete old PV object
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := migrateToCSI(); err != nil {
+		if err := migration.MigrateToCSI(kubeConfig, sourceStorageClass,
+			destinationStorageClass, rookNamespace, cephClusterNamespace); err != nil {
 			return err
 		}
 		return nil
@@ -71,38 +70,4 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&destinationStorageClass, "destinationstorageclass", "", "destination storageclass (CSI storageclass) to which all PVC need to be migrated")
 	rootCmd.PersistentFlags().StringVar(&rookNamespace, "rook-namespace", "rook-ceph", "Kubernetes namespace where rook operator is running")
 	rootCmd.PersistentFlags().StringVar(&cephClusterNamespace, "ceph-cluster-namespace", "rook-ceph", "Kubernetes namespace where ceph cluster is created")
-}
-
-func migrateToCSI() error {
-	// TODO
-	/*
-		add validation to check source,destination storageclass and Rook namespace
-	*/
-
-	// Create Kubernetes Client
-	logger.DefaultLog("Create Kubernetes Client")
-	client, err := kubernetes.NewClient(kubeConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create kubernetes client: %v", err)
-	}
-
-	logger.DefaultLog("List all the PVC from the source storageclass")
-	pvcs, err := kubernetes.ListAllPVCWithStorageclass(client, sourceStorageClass)
-	if err != nil {
-		return fmt.Errorf("failed to list PVCs from the storageclass: %v", err)
-	}
-	logger.DefaultLog("PVCs found with sourceStorageClass %s: %v ", sourceStorageClass, pvcs)
-	if pvcs == nil || len(*pvcs) == 0 {
-		logger.DefaultLog("no PVCs found with storageclass: %v", sourceStorageClass)
-		return nil
-	}
-
-	logger.DefaultLog("Start Migration of PVCs to CSI")
-	err = migratePVC(client, pvcs)
-	if err != nil {
-		return fmt.Errorf("Failed to migrate PVC/s : %v", err)
-	}
-	logger.DefaultLog("Successfully migrated all the PVC from FlexVolume to CSI")
-
-	return err
 }

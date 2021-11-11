@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package k8sutil
 
 import (
 	"context"
 	"fmt"
 	"time"
+
+	logger "persistent-volume-migrator/pkg/log"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -52,7 +54,7 @@ func DeletePV(client *k8s.Clientset, pv *corev1.PersistentVolume) error {
 	pvToDelete := pv
 	return wait.PollImmediate(poll, timeout, func() (bool, error) {
 		// Check that the PV is deleted.
-		fmt.Printf("waiting for PV %s in state %s to be deleted (%d seconds elapsed) \n", pvToDelete.Name, pvToDelete.Status.String(), int(time.Since(start).Seconds()))
+		logger.DefaultLog("waiting for PV %s in state %s to be deleted (%d seconds elapsed) \n", pvToDelete.Name, pvToDelete.Status.String(), int(time.Since(start).Seconds()))
 
 		pvToDelete, err = client.CoreV1().PersistentVolumes().Get(context.TODO(), pvToDelete.Name, v1.GetOptions{})
 		if err == nil {
@@ -75,14 +77,26 @@ func UpdateReclaimPolicy(client *k8s.Clientset, pv *corev1.PersistentVolume) err
 	return err
 }
 
-func GetFlexVolumeName(pv *corev1.PersistentVolume) string {
+func GetVolumeName(pv *corev1.PersistentVolume) string {
 	// Rook creates rbd image with PV name
 	return pv.Name
 }
 
-func GetCSIVolumeName(pv *corev1.PersistentVolume) string {
-	// CSI created rbd image name
-	return pv.Spec.CSI.VolumeAttributes["imageName"]
+func WaitForRBDImage(pv *corev1.PersistentVolume) string {
+	retry := 0
+	maxRetry := 15
+	for retry < maxRetry {
+		imageName := pv.Spec.CSI.VolumeAttributes["imageName"]
+		if imageName != "" {
+			// CSI created rbd image name
+			return imageName
+		}
+		logger.DefaultLog("Waiting for PersistentVolume %q to be Created, attempt: %d", pv.Name, retry)
+		time.Sleep(time.Second * 2)
+		retry++
+	}
+
+	return ""
 }
 
 func GetCSIPoolName(pv *corev1.PersistentVolume) string {
@@ -97,18 +111,18 @@ func GetClusterID(pv *corev1.PersistentVolume) string {
 
 // WaitForPersistentVolumePhase waits for a PersistentVolume to be in a specific phase or until timeout occurs, whichever comes first.
 func WaitForPersistentVolumePhase(c *k8s.Clientset, phase corev1.PersistentVolumePhase, pvName string, poll, timeout time.Duration) error {
-	fmt.Printf("Waiting up to %v for PersistentVolume %s to have phase %s \n", timeout, pvName, phase)
+	logger.DefaultLog("Waiting up to %v for PersistentVolume %s to have phase %s \n", timeout, pvName, phase)
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
 		pv, err := c.CoreV1().PersistentVolumes().Get(context.TODO(), pvName, v1.GetOptions{})
 		if err != nil {
-			fmt.Printf("Get persistent volume %s in failed, ignoring for %v: %v \n", pvName, poll, err)
+			logger.DefaultLog("Get persistent volume %s in failed, ignoring for %v: %v \n", pvName, poll, err)
 			continue
 		}
 		if pv.Status.Phase == phase {
-			fmt.Printf("PersistentVolume %s found and phase=%s (%v)\n", pvName, phase, time.Since(start))
+			logger.DefaultLog("PersistentVolume %s found and phase=%s (%v)\n", pvName, phase, time.Since(start))
 			return nil
 		}
-		fmt.Printf("PersistentVolume %s found but phase is %s instead of %s.\n", pvName, pv.Status.Phase, phase)
+		logger.DefaultLog("PersistentVolume %s found but phase is %s instead of %s.\n", pvName, pv.Status.Phase, phase)
 	}
 	return fmt.Errorf("PersistentVolume %s not in phase %s within %v", pvName, phase, timeout)
 }
