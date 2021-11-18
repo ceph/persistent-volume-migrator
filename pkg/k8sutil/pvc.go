@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package k8sutil
 
 import (
 	"context"
 	"fmt"
 	"time"
+
+	logger "persistent-volume-migrator/pkg/log"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -55,7 +57,7 @@ func ListAllPVCWithStorageclass(client *k8s.Clientset, scName string) (*[]corev1
 					sc = &val
 				}
 			}
-			if *p.Spec.StorageClassName == scName {
+			if *sc == scName {
 				*pl = append(*pl, p)
 			}
 		}
@@ -75,7 +77,7 @@ func DeletePVC(client *k8s.Clientset, pvc *corev1.PersistentVolumeClaim) error {
 	pvcToDelete := pvc
 	return wait.PollImmediate(poll, timeout, func() (bool, error) {
 		// Check that the PVC is deleted.
-		fmt.Printf("waiting for PVC %s in state %s to be deleted (%d seconds elapsed) \n", pvcToDelete.Name, pvcToDelete.Status.String(), int(time.Since(start).Seconds()))
+		logger.DefaultLog("waiting for PVC %s in state %s to be deleted (%d seconds elapsed) \n", pvcToDelete.Name, pvcToDelete.Status.String(), int(time.Since(start).Seconds()))
 		pvcToDelete, err = client.CoreV1().PersistentVolumeClaims(pvcToDelete.Namespace).Get(context.TODO(), pvcToDelete.Name, v1.GetOptions{})
 		if err == nil {
 			if pvcToDelete.Status.Phase == "" {
@@ -117,7 +119,7 @@ func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*cor
 	start := time.Now()
 	fmt.Printf("Waiting up to %v to be in Bound state\n", pvc)
 	err = wait.PollImmediate(poll, timeout, func() (bool, error) {
-		fmt.Printf("waiting for PVC %s (%d seconds elapsed) \n", pvc.Name, int(time.Since(start).Seconds()))
+		logger.DefaultLog("waiting for PVC %s (%d seconds elapsed) \n", pvc.Name, int(time.Since(start).Seconds()))
 		pvc, err = c.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(context.TODO(), name, v1.GetOptions{})
 		if err != nil {
 			fmt.Printf("Error getting pvc in namespace: '%s': %v\n", pvc.Namespace, err)
@@ -163,8 +165,7 @@ func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*cor
 // WaitOnPVandPVC waits for the pv and pvc to bind to each other.
 func WaitOnPVandPVC(c *kubernetes.Clientset, ns string, pv *corev1.PersistentVolume, pvc *corev1.PersistentVolumeClaim) error {
 	// Wait for newly created PVC to bind to the PV
-	fmt.Printf("Waiting for PV %v to bind to PVC %v", pv.Name, pvc.Name)
-	fmt.Println("TEST parameters in WaitOnPVandPVC", corev1.ClaimBound, c, ns, pvc.Name, poll, 30000000)
+	logger.DefaultLog("Waiting for PV %q to bind to PVC %q", pv.Name, pvc.Name)
 	err := WaitForPersistentVolumeClaimPhase(corev1.ClaimBound, c, ns, pvc.Name, poll, 30000000)
 	if err != nil {
 		return fmt.Errorf("PVC %q did not become Bound: %v", pvc.Name, err)

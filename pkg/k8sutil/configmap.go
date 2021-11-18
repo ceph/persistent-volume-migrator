@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package k8sutil
 
 import (
 	"context"
@@ -31,15 +31,6 @@ type csiClusterConfigEntry struct {
 }
 
 type csiClusterConfig []csiClusterConfigEntry
-
-func parseCsiClusterConfig(c string) (csiClusterConfig, error) {
-	var cc csiClusterConfig
-	err := json.Unmarshal([]byte(c), &cc)
-	if err != nil {
-		return cc, fmt.Errorf("failed to parse csi cluster config %w", err)
-	}
-	return cc, nil
-}
 
 func GetCSIConfiguration(client *kubernetes.Clientset, namespace string) (csiClusterConfig, error) {
 	var cc csiClusterConfig
