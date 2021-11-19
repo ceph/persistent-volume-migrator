@@ -82,7 +82,7 @@ func DeletePVC(client *k8s.Clientset, pvc *corev1.PersistentVolumeClaim) error {
 		if err == nil {
 			if pvcToDelete.Status.Phase == "" {
 				// this is unexpected, an empty Phase is not defined
-				fmt.Printf("PVC %s is in a weird state: %s", pvcToDelete.Name, pvcToDelete.String())
+				logger.DefaultLog("PVC %s is in a weird state: %s", pvcToDelete.Name, pvcToDelete.String())
 			}
 			return false, nil
 		}
@@ -117,12 +117,12 @@ func CreatePVC(c *k8s.Clientset, pvc *corev1.PersistentVolumeClaim, t int) (*cor
 
 	name := pvc.Name
 	start := time.Now()
-	fmt.Printf("Waiting up to %v to be in Bound state\n", pvc)
+	logger.DefaultLog("Waiting up to %v to be in Bound state\n", pvc)
 	err = wait.PollImmediate(poll, timeout, func() (bool, error) {
 		logger.DefaultLog("waiting for PVC %s (%d seconds elapsed) \n", pvc.Name, int(time.Since(start).Seconds()))
 		pvc, err = c.CoreV1().PersistentVolumeClaims(pvc.Namespace).Get(context.TODO(), name, v1.GetOptions{})
 		if err != nil {
-			fmt.Printf("Error getting pvc in namespace: '%s': %v\n", pvc.Namespace, err)
+			logger.DefaultLog("Error getting pvc in namespace: '%s': %v\n", pvc.Namespace, err)
 			// TODO check need to check retry error
 			if apierrs.IsNotFound(err) {
 				return false, nil
@@ -217,23 +217,23 @@ func WaitForPersistentVolumeClaimsPhase(phase corev1.PersistentVolumeClaimPhase,
 	if len(pvcNames) == 0 {
 		return fmt.Errorf("Incorrect parameter: Need at least one PVC to track. Found 0")
 	}
-	fmt.Printf("Waiting up to %v for PersistentVolumeClaims %v to have phase %s\n", timeout, pvcNames, phase)
+	logger.DefaultLog("Waiting up to %v for PersistentVolumeClaims %v to have phase %s\n", timeout, pvcNames, phase)
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(poll) {
 		phaseFoundInAllClaims := true
 		for _, pvcName := range pvcNames {
 			pvc, err := c.CoreV1().PersistentVolumeClaims(ns).Get(context.TODO(), pvcName, v1.GetOptions{})
 			if err != nil {
-				fmt.Printf("Failed to get claim %q, retrying in %v. Error: %v\n", pvcName, poll, err)
+				logger.DefaultLog("Failed to get claim %q, retrying in %v. Error: %v\n", pvcName, poll, err)
 				phaseFoundInAllClaims = false
 				break
 			}
 			if pvc.Status.Phase == phase {
-				fmt.Printf("PersistentVolumeClaim %s found and phase=%s (%v) \n", pvcName, phase, time.Since(start))
+				logger.DefaultLog("PersistentVolumeClaim %s found and phase=%s (%v) \n", pvcName, phase, time.Since(start))
 				if matchAny {
 					return nil
 				}
 			} else {
-				fmt.Printf("PersistentVolumeClaim %s found but phase is %s instead of %s.\n", pvcName, pvc.Status.Phase, phase)
+				logger.DefaultLog("PersistentVolumeClaim %s found but phase is %s instead of %s.\n", pvcName, pvc.Status.Phase, phase)
 				phaseFoundInAllClaims = false
 			}
 		}
