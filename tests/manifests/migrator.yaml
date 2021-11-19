@@ -3,24 +3,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rook-ceph-tools
+  name: rook-ceph-migrator
   namespace: rook-ceph # namespace:cluster
   labels:
-    app: rook-ceph-tools
+    app: rook-ceph-migrator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: rook-ceph-tools
+      app: rook-ceph-migrator
   template:
     metadata:
       labels:
-        app: rook-ceph-tools
+        app: rook-ceph-migrator
     spec:
-      serviceAccountName: rook-ceph-tools # only this field was newly added
+      serviceAccountName: rook-ceph-migrator # only this field was newly added
       dnsPolicy: ClusterFirstWithHostNet
       containers:
-        - name: rook-ceph-tools
+        - name: rook-ceph-migrator
           image: rook/ceph:v1.7.5
           command: ["/tini"]
           args: ["-g", "--", "/usr/local/bin/toolbox.sh"]
