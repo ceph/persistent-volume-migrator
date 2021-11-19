@@ -8,7 +8,7 @@ defaults:
     shell: bash --noprofile --norc -eo pipefail -x {0}
 
 jobs:
-  Intree-test:
+  Flex-to-CSI:
     runs-on: ubuntu-latest
     steps:
     - name: checkout
