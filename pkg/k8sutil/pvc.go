@@ -65,6 +65,22 @@ func ListAllPVCWithStorageclass(client *k8s.Clientset, scName string) (*[]corev1
 	return pl, nil
 }
 
+func ListSinglePVCWithStorageclass(client *k8s.Clientset, pvcName, pvcNamespace string) (*[]corev1.PersistentVolumeClaim, error) {
+	pl := &[]corev1.PersistentVolumeClaim{}
+
+	pvc, err := client.CoreV1().PersistentVolumeClaims(pvcNamespace).Get(context.TODO(), pvcName, v1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if pvc.Name == pvcName {
+		*pl = append(*pl, *pvc)
+		return pl, nil
+	}
+
+	return pl, nil
+}
+
 func DeletePVC(client *k8s.Clientset, pvc *corev1.PersistentVolumeClaim) error {
 	err := client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Delete(context.TODO(), pvc.Name, v1.DeleteOptions{})
 	if err != nil {

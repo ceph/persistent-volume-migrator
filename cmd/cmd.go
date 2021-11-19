@@ -27,6 +27,8 @@ var (
 	destinationStorageClass string
 	rookNamespace           string
 	cephClusterNamespace    string
+	pvcName                 string
+	pvcNamespace            string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -46,7 +48,7 @@ var rootCmd = &cobra.Command{
 	// 9. Delete old PV object
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := migration.MigrateToCSI(kubeConfig, sourceStorageClass,
-			destinationStorageClass, rookNamespace, cephClusterNamespace); err != nil {
+			destinationStorageClass, rookNamespace, cephClusterNamespace, pvcName, pvcNamespace); err != nil {
 			return err
 		}
 		return nil
@@ -70,4 +72,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&destinationStorageClass, "destinationstorageclass", "", "destination storageclass (CSI storageclass) to which all PVC need to be migrated")
 	rootCmd.PersistentFlags().StringVar(&rookNamespace, "rook-namespace", "rook-ceph", "Kubernetes namespace where rook operator is running")
 	rootCmd.PersistentFlags().StringVar(&cephClusterNamespace, "ceph-cluster-namespace", "rook-ceph", "Kubernetes namespace where ceph cluster is created")
+	rootCmd.PersistentFlags().StringVar(&pvcName, "pvc", "", "Name of the specific pvc you want to migrate")
+	rootCmd.PersistentFlags().StringVar(&pvcNamespace, "pvc-namespace", "", "Namespace of the specific pvc you want to migrate")
 }

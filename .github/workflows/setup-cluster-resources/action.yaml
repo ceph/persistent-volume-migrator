@@ -1,0 +1,37 @@
+name: Setup Cluster Resources
+description: Setup cluster resources required for migration
+inputs:
+  github-token:
+    description: GITHUB_TOKEN from the calling workflow
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: setup minikube
+      uses: manusa/actions-setup-minikube@v2.4.2
+      with:
+        minikube version: "v1.23.2"
+        kubernetes version: "v1.22.2"
+        start args: --memory 6g --cpus=2
+        github token: ${{ inputs.github-token }}
+
+    - name: print k8s cluster status
+      shell: bash --noprofile --norc -eo pipefail -x {0}
+      run:  |
+        minikube status
+        kubectl get nodes
+
+    - name: use local disk
+      shell: bash --noprofile --norc -eo pipefail -x {0}
+      run: tests/script/github_action_helper.sh use_local_disk
+
+    - name: Install yq
+      shell: bash --noprofile --norc -eo pipefail -x {0}
+      run: |
+        sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+
+    - name: setup flex
+      shell: bash --noprofile --norc -eo pipefail -x {0}
+      run: tests/script/github_action_helper.sh deploy_rook_ceph_with_flex

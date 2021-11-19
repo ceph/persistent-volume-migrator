@@ -16,32 +16,34 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: setup minikube
-      uses: manusa/actions-setup-minikube@v2.4.2
+    - name: setup cluster resources
+      uses: ./.github/workflows/setup-cluster-resources
       with:
-        minikube version: 'v1.23.2'
-        kubernetes version: 'v1.22.2'
-        start args: --memory 6g --cpus=2
-        github token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: print k8s cluster status
-      run:  |
-        minikube status
-        kubectl get nodes
+    - name: Test migration of all PVC
+      run: tests/script/github_action_helper.sh test_flex_migration_for_all_pvc
 
-    - name: use local disk
-      run: tests/script/github_action_helper.sh use_local_disk
+    - name: setup tmate session for debugging when event is PR
+      if: failure()
+      uses: mxschmitt/action-tmate@v3
+      timeout-minutes: 300
 
-    - name: Install yq
-      run: |
-        sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
-        sudo chmod +x /usr/local/bin/yq
+  Flex-Mirgate-single-PVC:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
-    - name: setup flex
-      run: tests/script/github_action_helper.sh deploy_rook_ceph_with_flex
+    - name: setup cluster resources
+      uses: ./.github/workflows/setup-cluster-resources
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: test flex migration
-      run: tests/script/github_action_helper.sh test_flex_migration
+    - name: Test migration of all PVC
+      run: tests/script/github_action_helper.sh test_flex_migration_for_single_pvc
 
     - name: setup tmate session for debugging when event is PR
       if: failure()
