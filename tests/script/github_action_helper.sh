@@ -25,7 +25,7 @@ deploy_rook_ceph_with_flex() {
   wget https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/cluster-test.yaml
   sed -i "s|#deviceFilter:|deviceFilter: $(lsblk|awk '/14G/ {print $1}'| head -1)|g" cluster-test.yaml
   kubectl create -f cluster-test.yaml
-  kubectl create -f tests/manifests/toolbox.yaml
+  kubectl create -f tests/manifests/migrator.yaml
   # wait_for_pod_to_be_ready_state check for osd pod to in ready state
   wait_for_osd_pod_to_be_ready_state
   # wait_for_pod_to_be_ready_state check for toolbox pod to in ready state
@@ -56,7 +56,7 @@ create_sample_pod_and_write_some_data_and_delete(){
 
 test_flex_migration() {
   go build main.go
-  TOOLBOX_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-tools -o jsonpath='{.items[*].metadata.name}')
+  TOOLBOX_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp main "$TOOLBOX_POD":/root/
   kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "cd root/ && ./main --sourcestoraageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
   exit_code_of_last_command=$?
@@ -98,7 +98,7 @@ EOF
 # wait_for_pod_to_be_ready_state check for osd pod to in ready state
 wait_for_toolboxpod_to_be_ready_state() {
   timeout 200 bash <<-'EOF'
-    until [ $(kubectl get pod -l app=rook-ceph-tools -n rook-ceph -o jsonpath='{.items[*].metadata.name}' -o custom-columns=READY:status.containerStatuses[*].ready | grep -c true) -eq 1 ]; do
+    until [ $(kubectl get pod -l app=rook-ceph-migrator -n rook-ceph -o jsonpath='{.items[*].metadata.name}' -o custom-columns=READY:status.containerStatuses[*].ready | grep -c true) -eq 1 ]; do
       echo "waiting for the toolbox pods to be in ready state"
       sleep 1
     done
