@@ -7,6 +7,7 @@ import (
 	"persistent-volume-migrator/pkg/k8sutil"
 	logger "persistent-volume-migrator/pkg/log"
 
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	k8s "k8s.io/client-go/kubernetes"
 )
@@ -16,16 +17,16 @@ const (
 )
 
 func MigrateToCSI(kubeConfig, sourceStorageClass, destinationStorageClass, rookNamespace, cephClusterNamespace, pvcName, pvcNamespace string) error {
-	// TODO
-	/*
-		add validation to check source,destination storageclass and Rook namespace
-	*/
-
 	// Create Kubernetes Client
 	logger.DefaultLog("Create Kubernetes Client")
 	client, err := k8sutil.NewClient(kubeConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create kubernetes client: %v", err)
+	}
+
+	err = validateResources(client, sourceStorageClass, destinationStorageClass, rookNamespace, cephClusterNamespace)
+	if err != nil {
+		return errors.Wrap(err, "resource validation failed")
 	}
 
 	logger.DefaultLog("List all the PVC from the source storageclass")
