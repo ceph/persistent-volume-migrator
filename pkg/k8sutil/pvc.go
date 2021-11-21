@@ -66,7 +66,7 @@ func ListAllPVCWithStorageclass(client *k8s.Clientset, scName string) (*[]corev1
 }
 
 func DeletePVC(client *k8s.Clientset, pvc *corev1.PersistentVolumeClaim) error {
-	err := client.CoreV1().PersistentVolumeClaims("default").Delete(context.TODO(), pvc.Name, v1.DeleteOptions{})
+	err := client.CoreV1().PersistentVolumeClaims(pvc.Namespace).Delete(context.TODO(), pvc.Name, v1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
