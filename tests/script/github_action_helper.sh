@@ -58,7 +58,7 @@ test_flex_migration_for_all_pvc(){
   go build main.go
   TOOLBOX_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp main "$TOOLBOX_POD":/root/
-  kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "cd root/ && ./main --sourcestoraageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
+  kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "cd root/ && ./main --sourcestorageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
   exit_code_of_last_command=$?
   if [ $exit_code_of_last_command -ne 0 ]; then
     echo "Exit code migration command is non-zero $exit_code_of_last_command. Migration failed"
