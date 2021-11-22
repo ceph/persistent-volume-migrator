@@ -58,7 +58,7 @@ test_flex_migration() {
   go build main.go
   TOOLBOX_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-tools -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp main "$TOOLBOX_POD":/root/
-  kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "mkdir -p /tmp/csi/keys && cd root/ && ./main flexToCSI --sourcestoraageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
+  kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "cd root/ && ./main flexToCSI --sourcestoraageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/csi/rbd/pod.yaml
   wait_for_sample_pod_to_be_ready_state
   verify_file_data_and_file_data

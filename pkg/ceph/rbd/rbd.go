@@ -29,6 +29,11 @@ const (
 )
 
 func storeKey(key string) (string, error) {
+	err := os.MkdirAll(tmpKeyFileLocation, 0700)
+	if err != nil {
+		return "", fmt.Errorf("error creating a temporary directory %s: %w", tmpKeyFileLocation, err)
+	}
+
 	tmpfile, err := ioutil.TempFile(tmpKeyFileLocation, tmpKeyFileNamePrefix)
 	if err != nil {
 		return "", fmt.Errorf("error creating a temporary keyfile: %w", err)
