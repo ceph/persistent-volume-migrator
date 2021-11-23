@@ -3,6 +3,7 @@ package migration
 import (
 	"fmt"
 
+	"persistent-volume-migrator/pkg/ceph/rbd"
 	"persistent-volume-migrator/pkg/k8sutil"
 	logger "persistent-volume-migrator/pkg/log"
 
@@ -112,7 +113,7 @@ func migratePVC(client *k8s.Clientset, pvc v1.PersistentVolumeClaim, destination
 		return fmt.Errorf("failed to get cluster config %v", err)
 	}
 	defer func() {
-		err = conn.Destroy()
+		err = rbd.RemoveKeyDir()
 		if err != nil {
 			logger.ErrorLog("failed to destroy the connection: %v", err)
 		}
