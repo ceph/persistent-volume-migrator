@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eEuo pipefail
+set -exEuo pipefail
 
 : "${FUNCTION:=${1}}"
 
@@ -58,13 +58,23 @@ test_flex_migration() {
   go build main.go
   TOOLBOX_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-tools -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp main "$TOOLBOX_POD":/root/
-  kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "cd root/ && ./main flexToCSI --sourcestoraageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
+  kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "cd root/ && ./main --sourcestoraageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
+  exit_code_of_last_command=$?
+  if [ $exit_code_of_last_command -ne 0 ]; then
+    echo "Exit code migration command is non-zero $exit_code_of_last_command. Migration failed"
+    exit 1
+  fi
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/csi/rbd/pod.yaml
   wait_for_sample_pod_to_be_ready_state
   verify_file_data_and_file_data
 }
 
 verify_file_data_and_file_data(){
+  storage_class_name=$(kubectl get pvc rbd-pvc -o jsonpath='{.spec.storageClassName}')
+  if [ "$storage_class_name" !=  "csi-rook-ceph-block" ]; then
+    echo "Migration failed"
+    exit 1
+  fi
   pod_data="$(kubectl exec  -it csirbd-demo-pod -- sh -c "cat /var/lib/www/html/pod-sample-file.txt")"
   file_data=$(cat pod-sample-file.txt)
   echo "$pod_data"
@@ -98,7 +108,7 @@ EOF
 wait_for_sample_pod_to_be_ready_state() {
   timeout 200 bash <<-'EOF'
     until [ $(kubectl get pod csirbd-demo-pod -o jsonpath='{.items[*].metadata.name}' -o custom-columns=READY:status.containerStatuses[*].ready | grep -c true) -eq 1 ]; do
-      echo "waiting for the toolbox pods to be in ready state"
+      echo "waiting for the application pods to be in ready state"
       sleep 1
     done
 EOF
