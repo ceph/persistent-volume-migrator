@@ -15,7 +15,7 @@ const (
 	pvcCreateTimeout = 5
 )
 
-func MigrateToCSI(kubeConfig, sourceStorageClass, destinationStorageClass, rookNamespace, cephClusterNamespace string) error {
+func MigrateToCSI(kubeConfig, sourceStorageClass, destinationStorageClass, rookNamespace, cephClusterNamespace, pvcName, pvcNamespace string) error {
 	// TODO
 	/*
 		add validation to check source,destination storageclass and Rook namespace
@@ -29,14 +29,27 @@ func MigrateToCSI(kubeConfig, sourceStorageClass, destinationStorageClass, rookN
 	}
 
 	logger.DefaultLog("List all the PVC from the source storageclass")
-	pvcs, err := k8sutil.ListAllPVCWithStorageclass(client, sourceStorageClass)
-	if err != nil {
-		return fmt.Errorf("failed to list PVCs from the storageclass: %v", err)
+	var pvcs *[]v1.PersistentVolumeClaim
+	if pvcNamespace != "" && pvcName != "" {
+		pvcs, err = k8sutil.ListSinglePVCWithStorageclass(client, pvcName, pvcNamespace)
+		if err != nil {
+			return fmt.Errorf("failed to list PVCs from the pvc name %s and pvc namespace %s : %v", pvcName, pvcNamespace, err)
+		}
+		if pvcs == nil || len(*pvcs) == 0 {
+			logger.DefaultLog("no PVCs found with the pvc name %s and pvc namespace %s : %v", pvcName, pvcNamespace, err)
+			return nil
+		}
+	} else {
+		pvcs, err = k8sutil.ListAllPVCWithStorageclass(client, sourceStorageClass)
+		if err != nil {
+			return fmt.Errorf("failed to list PVCs from the storageclass: %v", err)
+		}
+		if pvcs == nil || len(*pvcs) == 0 {
+			logger.DefaultLog("no PVCs found with storageclass: %v", sourceStorageClass)
+			return nil
+		}
 	}
-	if pvcs == nil || len(*pvcs) == 0 {
-		logger.DefaultLog("no PVCs found with storageclass: %v", sourceStorageClass)
-		return nil
-	}
+
 	logger.DefaultLog("%d PVCs found with source StorageClass %s ", len(*pvcs), sourceStorageClass)
 
 	logger.DefaultLog("Start Migration of PVCs to CSI")
