@@ -68,7 +68,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", "", "kubernetes config path")
-	rootCmd.PersistentFlags().StringVar(&sourceStorageClass, "sourcestoraageclass", "", "source storageclass from which all PVC need to be migrated")
+	rootCmd.PersistentFlags().StringVar(&sourceStorageClass, "sourcestorageclass", "", "source storageclass from which all PVC need to be migrated")
 	rootCmd.PersistentFlags().StringVar(&destinationStorageClass, "destinationstorageclass", "", "destination storageclass (CSI storageclass) to which all PVC need to be migrated")
 	rootCmd.PersistentFlags().StringVar(&rookNamespace, "rook-namespace", "rook-ceph", "Kubernetes namespace where rook operator is running")
 	rootCmd.PersistentFlags().StringVar(&cephClusterNamespace, "ceph-cluster-namespace", "rook-ceph", "Kubernetes namespace where ceph cluster is created")
