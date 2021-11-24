@@ -56,9 +56,9 @@ create_sample_pod_and_write_some_data_and_delete(){
 
 test_flex_migration_for_all_pvc(){
   go build main.go
-  TOOLBOX_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
-  kubectl -n rook-ceph cp main "$TOOLBOX_POD":/root/
-  kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "cd root/ && ./main --sourcestorageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
+  MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
+  kubectl -n rook-ceph cp main "$MIGRATION_POD":/root/
+  kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./main --sourcestorageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
   exit_code_of_last_command=$?
   if [ $exit_code_of_last_command -ne 0 ]; then
     echo "Exit code migration command is non-zero $exit_code_of_last_command. Migration failed"
@@ -71,9 +71,9 @@ test_flex_migration_for_all_pvc(){
 
 test_flex_migration_for_single_pvc(){
   go build main.go
-  TOOLBOX_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-tools -o jsonpath='{.items[*].metadata.name}')
-  kubectl -n rook-ceph cp main "$TOOLBOX_POD":/root/
-  kubectl -n rook-ceph exec -it "$TOOLBOX_POD" -- sh -c "cd root/ && ./main --pvc=rbd-pvc --pvc-namespace=default --destinationstorageclass=csi-rook-ceph-block"
+  MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
+  kubectl -n rook-ceph cp main "$MIGRATION_POD":/root/
+  kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./main --pvc=rbd-pvc --pvc-namespace=default --destinationstorageclass=csi-rook-ceph-block"
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/csi/rbd/pod.yaml
   wait_for_sample_pod_to_be_ready_state
   verify_file_data_and_file_data
