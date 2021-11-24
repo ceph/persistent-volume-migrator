@@ -68,10 +68,10 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&kubeConfig, "kubeconfig", "", "kubernetes config path")
-	rootCmd.PersistentFlags().StringVar(&sourceStorageClass, "sourcestorageclass", "", "source storageclass from which all PVC need to be migrated")
-	rootCmd.PersistentFlags().StringVar(&destinationStorageClass, "destinationstorageclass", "", "destination storageclass (CSI storageclass) to which all PVC need to be migrated")
-	rootCmd.PersistentFlags().StringVar(&rookNamespace, "rook-namespace", "rook-ceph", "Kubernetes namespace where rook operator is running")
-	rootCmd.PersistentFlags().StringVar(&cephClusterNamespace, "ceph-cluster-namespace", "rook-ceph", "Kubernetes namespace where ceph cluster is created")
+	rootCmd.PersistentFlags().StringVar(&sourceStorageClass, "source-sc", "", "source storageclass from which all PVC need to be migrated")
+	rootCmd.PersistentFlags().StringVar(&destinationStorageClass, "destination-sc", "", "destination storageclass (CSI storageclass) to which all PVC need to be migrated")
+	rootCmd.PersistentFlags().StringVar(&rookNamespace, "rook-ns", "rook-ceph", "Kubernetes namespace where rook operator is running")
+	rootCmd.PersistentFlags().StringVar(&cephClusterNamespace, "ceph-cluster-ns", "rook-ceph", "Kubernetes namespace where ceph cluster is created")
 	rootCmd.PersistentFlags().StringVar(&pvcName, "pvc", "", "Name of the specific pvc you want to migrate")
-	rootCmd.PersistentFlags().StringVar(&pvcNamespace, "pvc-namespace", "", "Namespace of the specific pvc you want to migrate")
+	rootCmd.PersistentFlags().StringVar(&pvcNamespace, "pvc-ns", "", "Namespace of the specific pvc you want to migrate")
 }

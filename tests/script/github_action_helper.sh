@@ -13,9 +13,7 @@ use_local_disk() {
 }
 
 deploy_rook_ceph_with_flex() {
-  wget https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/common.yaml
-  < tests/manifests/modified_common.yaml tee -a common.yaml
-  kubectl create -f common.yaml
+  kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/common.yaml
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/crds.yaml
   wget https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/operator.yaml
   sed -i 's|ROOK_ENABLE_FLEX_DRIVER: "false"|ROOK_ENABLE_FLEX_DRIVER: "true"|g' operator.yaml
@@ -25,7 +23,7 @@ deploy_rook_ceph_with_flex() {
   wget https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/cluster-test.yaml
   sed -i "s|#deviceFilter:|deviceFilter: $(lsblk|awk '/14G/ {print $1}'| head -1)|g" cluster-test.yaml
   kubectl create -f cluster-test.yaml
-  kubectl create -f tests/manifests/migrator.yaml
+  kubectl create -f manifests/migrator.yaml
   # wait_for_pod_to_be_ready_state check for osd pod to in ready state
   wait_for_osd_pod_to_be_ready_state
   # wait_for_pod_to_be_ready_state check for toolbox pod to in ready state
@@ -58,7 +56,7 @@ test_flex_migration_for_all_pvc(){
   go build main.go
   MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp main "$MIGRATION_POD":/root/
-  kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./main --sourcestorageclass=rook-ceph-block --destinationstorageclass=csi-rook-ceph-block"
+  kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./main --source-sc=rook-ceph-block --destination-sc=csi-rook-ceph-block"
   exit_code_of_last_command=$?
   if [ $exit_code_of_last_command -ne 0 ]; then
     echo "Exit code migration command is non-zero $exit_code_of_last_command. Migration failed"
@@ -73,7 +71,7 @@ test_flex_migration_for_single_pvc(){
   go build main.go
   MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp main "$MIGRATION_POD":/root/
-  kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./main --pvc=rbd-pvc --pvc-namespace=default --destinationstorageclass=csi-rook-ceph-block"
+  kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./main --pvc=rbd-pvc --pvc-ns=default --destination-sc=csi-rook-ceph-block"
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/csi/rbd/pod.yaml
   wait_for_sample_pod_to_be_ready_state
   verify_file_data_and_file_data
