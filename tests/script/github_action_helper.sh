@@ -13,9 +13,7 @@ use_local_disk() {
 }
 
 deploy_rook_ceph_with_flex() {
-  wget https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/common.yaml
-  < tests/manifests/modified_common.yaml tee -a common.yaml
-  kubectl create -f common.yaml
+  kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/common.yaml
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/crds.yaml
   wget https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/operator.yaml
   sed -i 's|ROOK_ENABLE_FLEX_DRIVER: "false"|ROOK_ENABLE_FLEX_DRIVER: "true"|g' operator.yaml
@@ -25,7 +23,7 @@ deploy_rook_ceph_with_flex() {
   wget https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/cluster-test.yaml
   sed -i "s|#deviceFilter:|deviceFilter: $(lsblk|awk '/14G/ {print $1}'| head -1)|g" cluster-test.yaml
   kubectl create -f cluster-test.yaml
-  kubectl create -f tests/manifests/migrator.yaml
+  kubectl create -f manifests/migrator.yaml
   # wait_for_pod_to_be_ready_state check for osd pod to in ready state
   wait_for_osd_pod_to_be_ready_state
   # wait_for_pod_to_be_ready_state check for toolbox pod to in ready state
