@@ -1,0 +1,16 @@
+name: Markdown-lint
+on:
+  pull_request:
+
+jobs:
+  lint-Markdown:
+    name: Lint markdown file
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Lint markdown file
+      uses: docker://avtodev/markdown-lint:v1
+      with:
+        args: './README.md'
