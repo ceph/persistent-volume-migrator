@@ -47,5 +47,5 @@ func NewConnection(monitor, id, key, pool, datapool string) (*Connection, error)
 
 func RemoveKeyDir() error {
 	// remove the directory which was created specially for storing key. This will also remove key file.
-	return os.Remove("/tmp/csi/keys")
+	return os.RemoveAll("/tmp/csi/keys")
 }
