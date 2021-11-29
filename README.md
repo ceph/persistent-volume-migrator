@@ -3,7 +3,8 @@
 
 The persistent-volume-migrator tool aims to help migrate Flex RBD Volumes to
 [Ceph-CSI](https://github.com/ceph/ceph-csi) RBD Volumes.
-**Note** CephFS is not supported for now.
+
+> **Note** Migration of CephFS FlexVolumes is not supported for now.
 
 ## Getting Started
 
@@ -30,9 +31,10 @@ This guide assumes you have created a Rook-Ceph cluster with Flex and
    to be converted.
 2. Create migrator pod `kubectl create -f manifests/migrator.yaml`
 3. Download the binary from release
+   1. `wget https://github.com/ceph/persistent-volume-migrator/releases/download/v0.1.0-alpha/pv-migrator`
 4. Run the command to [migrate the PVC(s)](#migrate-the-pvcs)
 
-## Migrate the PVCs
+## Usage
 
 ### Migrate a Single PVC
 
