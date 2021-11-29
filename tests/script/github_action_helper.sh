@@ -53,7 +53,7 @@ create_sample_pod_and_write_some_data_and_delete(){
 }
 
 test_flex_migration_for_all_pvc(){
-  go build -o pv-migrator
+  #go build -o pv-migrator
   MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp pv-migrator "$MIGRATION_POD":/root/
   kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./pv-migrator --source-sc=rook-ceph-block --destination-sc=csi-rook-ceph-block"
@@ -68,7 +68,7 @@ test_flex_migration_for_all_pvc(){
 }
 
 test_flex_migration_for_single_pvc(){
-  go build -o pv-migrator
+  #go build -o pv-migrator
   MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp pv-migrator "$MIGRATION_POD":/root/
   kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./pv-migrator --pvc=rbd-pvc --pvc-ns=default --destination-sc=csi-rook-ceph-block"
