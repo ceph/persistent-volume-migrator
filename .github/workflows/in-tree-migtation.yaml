@@ -1,4 +1,4 @@
-name: Migrate-to-Flex
+name: Migrate-to-In-tree
 on:
   pull_request:
 
@@ -8,7 +8,7 @@ defaults:
     shell: bash --noprofile --norc -eo pipefail -x {0}
 
 jobs:
-  Flex-to-CSI:
+  In-tree-to-CSI:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -21,18 +21,18 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: setup flex
-        run: tests/script/github_action_helper.sh deploy_rook_ceph_with_flex
+      - name: setup In-tree
+        run: tests/script/github_action_helper.sh deploy_rook_ceph_with_intree
 
       - name: Test migration of all PVC
-        run: tests/script/github_action_helper.sh test_flex_migration_for_all_pvc
+        run: tests/script/github_action_helper.sh test_intree_migration_for_all_pvc
 
       - name: setup tmate session for debugging when event is PR
         if: failure()
         uses: mxschmitt/action-tmate@v3
         timeout-minutes: 300
 
-  Flex-Mirgate-single-PVC:
+  In-tree-Mirgate-single-PVC:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -45,11 +45,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: setup flex
-        run: tests/script/github_action_helper.sh deploy_rook_ceph_with_flex
+      - name: setup In-tree
+        run: tests/script/github_action_helper.sh deploy_rook_ceph_with_intree
 
       - name: Test migration of all PVC
-        run: tests/script/github_action_helper.sh test_flex_migration_for_single_pvc
+        run: tests/script/github_action_helper.sh test_intree_migration_for_single_pvc
 
       - name: setup tmate session for debugging when event is PR
         if: failure()

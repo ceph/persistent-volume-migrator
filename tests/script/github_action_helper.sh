@@ -26,8 +26,8 @@ deploy_rook_ceph_with_flex() {
   kubectl create -f manifests/migrator.yaml
   # wait_for_pod_to_be_ready_state check for osd pod to in ready state
   wait_for_osd_pod_to_be_ready_state
-  # wait_for_pod_to_be_ready_state check for toolbox pod to in ready state
-  wait_for_toolboxpod_to_be_ready_state
+  # wait_for_migrator_pod_to_be_ready_state check for migrator pod to in ready state
+  wait_for_migrator_pod_to_be_ready_state
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/flex/storageclass-test.yaml
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/csi/rbd/pvc.yaml
   # creating sample application pod, writing some data into pod and deletes the pod
@@ -72,6 +72,11 @@ test_flex_migration_for_single_pvc(){
   MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
   kubectl -n rook-ceph cp pv-migrator "$MIGRATION_POD":/root/
   kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./pv-migrator --pvc=rbd-pvc --pvc-ns=default --destination-sc=csi-rook-ceph-block"
+  exit_code_of_last_command=$?
+  if [ $exit_code_of_last_command -ne 0 ]; then
+    echo "Exit code migration command is non-zero $exit_code_of_last_command. Migration failed"
+    exit 1
+  fi
   kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/csi/rbd/pod.yaml
   wait_for_sample_pod_to_be_ready_state
   verify_file_data_and_file_data
@@ -103,8 +108,8 @@ wait_for_osd_pod_to_be_ready_state() {
 EOF
 }
 
-# wait_for_pod_to_be_ready_state check for osd pod to in ready state
-wait_for_toolboxpod_to_be_ready_state() {
+# wait_for_migrator_pod_to_be_ready_state check for migrator pod to in ready state
+wait_for_migrator_pod_to_be_ready_state() {
   timeout 200 bash <<-'EOF'
     until [ $(kubectl get pod -l app=rook-ceph-migrator -n rook-ceph -o jsonpath='{.items[*].metadata.name}' -o custom-columns=READY:status.containerStatuses[*].ready | grep -c true) -eq 1 ]; do
       echo "waiting for the toolbox pods to be in ready state"
@@ -120,6 +125,110 @@ wait_for_sample_pod_to_be_ready_state() {
       sleep 1
     done
 EOF
+}
+
+deploy_rook_ceph_with_intree() {
+  kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/common.yaml
+  kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/crds.yaml
+  kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/operator.yaml
+  wget https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/cluster-test.yaml
+  sed -i "s|#deviceFilter:|deviceFilter: $(lsblk|awk '/14G/ {print $1}'| head -1)|g" cluster-test.yaml
+  kubectl create -f cluster-test.yaml
+  wait_for_osd_pod_to_be_ready_state
+  kubectl create -f manifests/migrator.yaml
+  wait_for_toolboxpod_to_be_ready_state
+  kubectl create -f https://raw.githubusercontent.com/rook/rook/release-1.7/cluster/examples/kubernetes/ceph/pool-test.yaml
+
+  kubectl patch storageclass standard -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+  sudo sed -i 's/image: k8s.gcr.io\/kube-controller-manager:v1.22.2/image: gcr.io\/google_containers\/hyperkube:v1.16.3/g' /etc/kubernetes/manifests/kube-controller-manager.yaml
+  kubectl create -f manifests/migrator.yaml
+  # wait_for_pod_to_be_ready_state check for migrator pod to in ready state
+  wait_for_migrator_pod_to_be_ready_state
+  MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
+  ADMIN_KEY=$(kubectl -n rook-ceph exec "$MIGRATION_POD" -- /bin/bash -c "ceph auth get-key client.admin")
+  AKEY=$(echo "$ADMIN_KEY"|base64)
+  cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ceph-secret
+  namespace: kube-system
+data:
+  key: ${AKEY}
+type: kubernetes.io/rbd
+EOF
+  kubectl -n kube-system get secret ceph-secret
+  kubectl -n rook-ceph exec "$MIGRATION_POD" -- /bin/bash -c "ceph auth get-or-create client.replicapool mon 'allow r' osd 'allow class-read object_prefix rbd_children, allow rwx pool=kube' -o ceph.client.replicapool.keyring"
+  USER_KEY=$(kubectl -n rook-ceph exec "$MIGRATION_POD" -- /bin/bash -c "ceph auth get-key client.replicapool")
+  UKEY=$(echo "$USER_KEY"|base64)
+  cat <<EOF | kubectl create -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ceph-user-secret
+  namespace: default
+data:
+  key: ${UKEY}
+type: kubernetes.io/rbd
+EOF
+  kubectl get secret ceph-user-secret
+  MON_STAT=$(kubectl -n rook-ceph exec "$MIGRATION_POD" -- /bin/bash -c "ceph mon stat")
+  MON_IP=$(echo "$MON_STAT" | awk -F "v1:" '{print $2}' | cut -d/ -f1)
+  cat <<EOF | kubectl create -f -
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: dynamic
+  annotations:
+     storageclass.beta.kubernetes.io/is-default-class: "true"
+provisioner: kubernetes.io/rbd
+parameters:
+  monitors: ${MON_IP}
+  adminId: admin
+  adminSecretName: ceph-secret
+  adminSecretNamespace: kube-system
+  pool: replicapool
+  userId: replicapool
+  userSecretName: ceph-user-secret
+EOF
+cat <<EOF | kubectl create -f -
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ceph-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+EOF
+
+  create_csi_resources
+}
+
+test_intree_migration_for_all_pvc(){
+  go build -o pv-migrator
+  MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
+  kubectl -n rook-ceph cp pv-migrator "$MIGRATION_POD":/root/
+  kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./pv-migrator --source-sc=dynamic --destination-sc=csi-rook-ceph-block"
+  exit_code_of_last_command=$?
+  if [ $exit_code_of_last_command -ne 0 ]; then
+    echo "Exit code migration command is non-zero $exit_code_of_last_command. Migration failed"
+    exit 1
+  fi
+}
+
+test_intree_migration_for_single_pvc(){
+  go build -o pv-migrator
+  MIGRATION_POD=$(kubectl -n rook-ceph get pod -l app=rook-ceph-migrator -o jsonpath='{.items[*].metadata.name}')
+  kubectl -n rook-ceph cp pv-migrator "$MIGRATION_POD":/root/
+  kubectl -n rook-ceph exec -it "$MIGRATION_POD" -- sh -c "cd root/ && ./pv-migrator --pvc=ceph-claim --pvc-ns=default --destination-sc=csi-rook-ceph-block"
+  exit_code_of_last_command=$?
+  if [ $exit_code_of_last_command -ne 0 ]; then
+    echo "Exit code migration command is non-zero $exit_code_of_last_command. Migration failed"
+    exit 1
+  fi
 }
 
 ########
