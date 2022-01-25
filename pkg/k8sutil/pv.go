@@ -78,8 +78,14 @@ func UpdateReclaimPolicy(client *k8s.Clientset, pv *corev1.PersistentVolume) err
 }
 
 func GetVolumeName(pv *corev1.PersistentVolume) string {
-	// Rook creates rbd image with PV name
-	return pv.Name
+	// check if Volume is provisioned by FlexVolume Driver.
+	if pv.Spec.FlexVolume != nil {
+		// In case of FlexVolume driver, rbd image is created with the PV name.
+		return pv.Name
+	}
+	// else in the case of volume provisioned by the intree driver,
+	// return the imagename from the spec.
+	return pv.Spec.RBD.RBDImage
 }
 
 func WaitForRBDImage(pv *corev1.PersistentVolume) string {
