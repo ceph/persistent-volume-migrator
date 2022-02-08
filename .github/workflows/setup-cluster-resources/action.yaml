@@ -18,7 +18,7 @@ runs:
 
     - name: print k8s cluster status
       shell: bash --noprofile --norc -eo pipefail -x {0}
-      run:  |
+      run: |
         minikube status
         kubectl get nodes
 
@@ -31,7 +31,3 @@ runs:
       run: |
         sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/3.3.0/yq_linux_amd64
         sudo chmod +x /usr/local/bin/yq
-
-    - name: setup flex
-      shell: bash --noprofile --norc -eo pipefail -x {0}
-      run: tests/script/github_action_helper.sh deploy_rook_ceph_with_flex
