@@ -34,6 +34,8 @@ This guide assumes you have created a Rook-Ceph cluster with Flex and
    1. `wget https://github.com/ceph/persistent-volume-migrator/releases/download/v0.1.0-alpha/pv-migrator`
 4. Run the command to [migrate the PVC(s)](#migrate-the-pvcs)
 
+**NOTE**: source and destination StorageClass should use the same pool.
+
 ## Usage
 
 ### Migrate a Single PVC
