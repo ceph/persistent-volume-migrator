@@ -19,7 +19,7 @@ package logger
 import (
 	"fmt"
 
-	"k8s.io/klog/v2"
+	klog "k8s.io/klog/v2"
 )
 
 // ErrorLog helps in logging errors.
