@@ -78,18 +78,19 @@ func migratePVC(client *k8s.Clientset, pvc v1.PersistentVolumeClaim, destination
 	}
 	logger.DefaultLog("PV found %q ", pv.Name)
 
+	// retrieve and validate the volume name before starting the migration
+	logger.DefaultLog("Retrieving old ceph volume name from PV object: %s", pv.Name)
+	rbdImageName := k8sutil.GetVolumeName(pv)
+	if rbdImageName == "" {
+		return fmt.Errorf("rbdImageName cannot be empty in PV object: %v", pv)
+	}
+	logger.DefaultLog("rbd image name is %q ", rbdImageName)
+
 	logger.DefaultLog("Update Reclaim policy from Delete to Reclaim for PV: %s", pv.Name)
 	err = k8sutil.UpdateReclaimPolicy(client, pv)
 	if err != nil {
 		return fmt.Errorf("failed to update ReclaimPolicy for PV object %s: %v", pvc.Spec.VolumeName, err)
 	}
-
-	logger.DefaultLog("Retrieving old ceph volume name from PV object: %s", pv.Name)
-	rbdImageName := k8sutil.GetVolumeName(pv)
-	if rbdImageName == "" {
-		return fmt.Errorf("rbdImageName cannot be empty in Flex PV object: %v", pv)
-	}
-	logger.DefaultLog("rbd image name is %q ", rbdImageName)
 
 	logger.DefaultLog("Deleting pvc object: %s", pvc.Name)
 	err = k8sutil.DeletePVC(client, &pvc) // nolint:gosec // skip gosec as pvc is accessed via it's reference.

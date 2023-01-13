@@ -83,9 +83,18 @@ func GetVolumeName(pv *corev1.PersistentVolume) string {
 		// In case of FlexVolume driver, rbd image is created with the PV name.
 		return pv.Name
 	}
-	// else in the case of volume provisioned by the intree driver,
-	// return the imagename from the spec.
-	return pv.Spec.RBD.RBDImage
+	// check if Volume is provisioned by the intree driver.
+	if pv.Spec.RBD != nil {
+		// return the imagename from the spec.
+		return pv.Spec.RBD.RBDImage
+	}
+	// check if Volume is provisioned by the CSI driver.
+	if pv.Spec.CSI != nil {
+		// return the imagename from the spec.
+		return pv.Spec.CSI.VolumeAttributes["imageName"]
+	}
+	// unable to find the volume name.
+	return ""
 }
 
 func WaitForRBDImage(pv *corev1.PersistentVolume) string {
