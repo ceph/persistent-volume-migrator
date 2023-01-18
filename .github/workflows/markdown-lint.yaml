@@ -5,12 +5,12 @@ on:
 jobs:
   lint-Markdown:
     name: Lint markdown file
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
-    - name: Check out code
-      uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
 
-    - name: Lint markdown file
-      uses: docker://avtodev/markdown-lint:v1
-      with:
-        args: './README.md'
+      - name: Lint markdown file
+        uses: docker://avtodev/markdown-lint:v1
+        with:
+          args: "./README.md"
