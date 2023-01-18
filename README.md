@@ -4,7 +4,9 @@
 The persistent-volume-migrator tool aims to help migrate Flex RBD Volumes to
 [Ceph-CSI](https://github.com/ceph/ceph-csi) RBD Volumes.
 
-> **Note** Migration of CephFS FlexVolumes is not supported for now.
+Migration between Ceph-CSI Volumes is also supported.
+
+> **Note** Migration of CephFS Volumes is not supported for now.
 
 ## Getting Started
 
