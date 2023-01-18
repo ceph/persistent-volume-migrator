@@ -9,7 +9,7 @@ defaults:
 
 jobs:
   Flex-to-CSI:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
         timeout-minutes: 300
 
   Flex-Mirgate-single-PVC:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: checkout
         uses: actions/checkout@v2
